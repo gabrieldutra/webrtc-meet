@@ -21,6 +21,7 @@ export function JoinRoomModal({ onOk, ...otherProps }: JoinRoomModalProps) {
       >
         <Form.Item name="roomId" label="Room ID" rules={[{ required: true }]}>
           <Input
+            autoFocus
             placeholder="Enter the Room Id here"
             value={roomId}
             onChange={(e) => setRoomId(e.target.value)}
