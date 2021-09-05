@@ -8,18 +8,20 @@ import { useState } from "react";
 import { JoinRoomModal } from "../components/JoinRoomModal";
 import { useRouter } from "next/dist/client/router";
 import short from "short-uuid";
-import { useFirestoreCreateCallMutation } from "../lib/useFirestoreCreateCallMutation";
-import { route } from "next/dist/server/router";
+import { useFirestore } from "../lib/FirestoreProvider";
+
+function createCall() {}
 
 const Home: NextPage = () => {
   const [isJoinRoomModalVisible, setIsJoinRoomModalVisible] = useState(false);
   const router = useRouter();
+  const firestore = useFirestore();
 
-  const createCallMutation = useFirestoreCreateCallMutation({
-    onSuccess(data) {
-      router.push(`/${data.id}`);
-    },
-  });
+  // const createCallMutation = useCreateCallMutation({
+  //   onSuccess(data) {
+  //     router.push(`/${data.id}`);
+  //   },
+  // });
 
   return (
     <div className={styles.container}>
@@ -69,7 +71,10 @@ const Home: NextPage = () => {
 
           <a
             css={{ cursor: "pointer" }}
-            onClick={() => createCallMutation.mutate({})}
+            onClick={() => {
+              const callDoc = firestore.collection("calls").doc();
+              router.push(`/${callDoc.id}`);
+            }}
             className={styles.card}
           >
             <h2>Create &rarr;</h2>

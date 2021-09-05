@@ -1,6 +1,6 @@
 import React, { useContext } from "react";
-import { Firestore, getFirestore } from "firebase/firestore";
-import { getApps, initializeApp } from "@firebase/app";
+import firebase from "firebase/app";
+import "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAeAUOjqg1avvnmDk1iUfB_qRIs481Kj5I",
@@ -11,13 +11,12 @@ const firebaseConfig = {
   appId: "1:464658614828:web:fcd8f1e2fe5fa312c05f89",
 };
 
-if (!getApps().length) {
-  initializeApp(firebaseConfig);
+if (!firebase.apps.length) {
+  firebase.initializeApp(firebaseConfig);
 }
+const firestore = firebase.firestore();
 
-const firestore = getFirestore();
-
-const FirestoreContext = React.createContext<Firestore>(firestore);
+const FirestoreContext = React.createContext(firestore);
 
 export function useFirestore() {
   return useContext(FirestoreContext);

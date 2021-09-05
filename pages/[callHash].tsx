@@ -1,11 +1,13 @@
 import type { NextPage } from "next";
 import Head from "next/head";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Video } from "../components/Video";
 import { useRouter } from "next/dist/client/router";
 import { Button, Col, Result, Row, Typography } from "antd";
 import { useLocalMediaStream } from "../lib/useLocalMediaStream";
-import { useFirestoreCallQuery } from "../lib/useFirestoreCallQuery";
+import { usePeerConnection } from "../lib/usePeerConnection";
+import { useNewMediaStream } from "../lib/useNewMediaStream";
+import { useFirestore } from "../lib/FirestoreProvider";
 
 const rtcServers = {
   iceServers: [
@@ -36,15 +38,128 @@ const Call: NextPage = () => {
     query: { callHash },
   } = useRouter();
 
+  const firestore = useFirestore();
   const callId = Array.isArray(callHash) ? callHash[0] : callHash;
 
-  // const peerConnection = useMemo(() => new RTCPeerConnection(rtcServers), []);
-
-  const { data, isError, isLoading } = useFirestoreCallQuery(callId!);
+  // const pc = useMemo(() => new RTCpc(rtcServers), []);
+  // const remoteMediaStream = useNewMediaStream();
+  const [remoteMediaStream, setRemoteMediaStream] = useState<MediaStream>();
+  const remoteMediaStreamRef = useRef(remoteMediaStream);
+  remoteMediaStreamRef.current = remoteMediaStream;
 
   const localMediaStream = useLocalMediaStream({
-    skip: isError || isLoading || !data?.exists(),
+    skip: false,
   });
+
+  const loadedCallRef = useRef(false);
+  useEffect(() => {
+    if (loadedCallRef.current || !callId || !localMediaStream) return;
+    loadedCallRef.current = true;
+
+    const load = async () => {
+      const newRemoteMediaStream = new MediaStream();
+      const pc = new RTCPeerConnection(rtcServers);
+
+      // Push tracks from local stream to peer connection
+      newRemoteMediaStream.getTracks().forEach((track) => {
+        pc.addTrack(track, localMediaStream);
+      });
+
+      // Pull tracks from remote stream, add to video stream
+      pc.ontrack = (event) => {
+        event.streams[0].getTracks().forEach((track) => {
+          newRemoteMediaStream.addTrack(track);
+        });
+      };
+
+      setRemoteMediaStream(newRemoteMediaStream);
+
+      const callDoc = firestore.collection("calls").doc(callId);
+      const offerCandidates = callDoc.collection("offerCandidates");
+      const answerCandidates = callDoc.collection("answerCandidates");
+      console.log(callId);
+      const doc = await callDoc.get();
+      console.log(doc.exists);
+
+      if (!(await callDoc.get()).data()?.offer) {
+        console.log("does not exist!");
+
+        // Get candidates for caller, save to db
+        pc.onicecandidate = (event) => {
+          event.candidate && offerCandidates.add(event.candidate.toJSON());
+        };
+
+        // Create offer
+        const offerDescription = await pc.createOffer();
+        await pc.setLocalDescription(offerDescription);
+
+        const offer = {
+          sdp: offerDescription.sdp,
+          type: offerDescription.type,
+        };
+
+        await callDoc.set({ offer });
+
+        // Listen for remote answer
+        callDoc.onSnapshot((snapshot) => {
+          const data = snapshot.data();
+          if (!pc.currentRemoteDescription && data?.answer) {
+            const answerDescription = new RTCSessionDescription(data.answer);
+            pc.setRemoteDescription(answerDescription);
+          }
+        });
+
+        // When answered, add candidate to peer connection
+        answerCandidates.onSnapshot((snapshot) => {
+          snapshot.docChanges().forEach((change) => {
+            if (change.type === "added") {
+              const candidate = new RTCIceCandidate(change.doc.data());
+              pc.addIceCandidate(candidate);
+            }
+          });
+        });
+
+        return () => {
+          pc.onicecandidate = null;
+        };
+      } else {
+        console.log("exists!");
+
+        pc.onicecandidate = (event) => {
+          event.candidate && answerCandidates.add(event.candidate.toJSON());
+        };
+
+        const callData = (await callDoc.get()).data();
+        console.log(callData);
+
+        const offerDescription = callData?.offer;
+        await pc.setRemoteDescription(
+          new RTCSessionDescription(offerDescription)
+        );
+
+        const answerDescription = await pc.createAnswer();
+        await pc.setLocalDescription(answerDescription);
+
+        const answer = {
+          type: answerDescription.type,
+          sdp: answerDescription.sdp,
+        };
+
+        await callDoc.update({ answer });
+
+        offerCandidates.onSnapshot((snapshot) => {
+          snapshot.docChanges().forEach((change) => {
+            if (change.type === "added") {
+              let data = change.doc.data();
+              pc.addIceCandidate(new RTCIceCandidate(data));
+            }
+          });
+        });
+      }
+    };
+
+    load();
+  }, [firestore, callId, localMediaStream]);
 
   return (
     <div
@@ -62,14 +177,13 @@ const Call: NextPage = () => {
         <meta name="description" content="A basic meet application." />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      {!isLoading && !data?.exists() && <CallEmptyState />}
-      {!isLoading && data?.exists() && (
+      {true && (
         <>
           <div css={{ marginBottom: 40 }}>
             <Typography.Title level={3}>
               Send this link to your friends for them to join:{" "}
               <Typography.Text code copyable>
-                {`${location?.protocol}//${location.host}/${callHash}`}
+                {/* {`${location?.protocol}//${location.host}/${callHash}`} */}
               </Typography.Text>
             </Typography.Title>
           </div>
@@ -87,7 +201,7 @@ const Call: NextPage = () => {
               <Video
                 width="100%"
                 css={{ border: "2px solid black" }}
-                srcObject={localMediaStream}
+                srcObject={remoteMediaStream}
                 autoPlay
                 playsInline
               />
