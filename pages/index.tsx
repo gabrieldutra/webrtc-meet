@@ -39,6 +39,7 @@ const Home: NextPage = () => {
             <span css={{ marginLeft: 12 }}>
               <VideoCameraOutlined /> Meet
             </span>
+            !
           </Typist>
         </h1>
 

@@ -4,33 +4,14 @@ import { useEffect, useState } from "react";
 import { Video } from "../components/Video";
 import { useRouter } from "next/dist/client/router";
 import { Col, Row, Typography } from "antd";
+import { useLocalMediaStream } from "../lib/useLocalMediaStream";
 
 const Call: NextPage = () => {
   const {
     query: { callHash },
   } = useRouter();
 
-  useEffect(() => {
-    console.log(`Current Hash: ${callHash}`);
-  });
-
-  const [localMediaStream, setLocalMediaStream] = useState<MediaStream>();
-
-  useEffect(() => {
-    let cancel = false;
-
-    const loadLocalMedia = async () => {
-      const localMedia = await navigator.mediaDevices.getUserMedia({
-        video: true,
-      });
-      if (!cancel) setLocalMediaStream(localMedia);
-    };
-
-    loadLocalMedia();
-    return () => {
-      cancel = true;
-    };
-  }, []);
+  const localMediaStream = useLocalMediaStream();
 
   return (
     <div
@@ -52,7 +33,7 @@ const Call: NextPage = () => {
         <Typography.Title level={3}>
           Send this link to your friends for them to join:{" "}
           <Typography.Text code copyable>
-            {`${location.protocol}//${location.host}${location.pathname}`}
+            {`${location.protocol}//${location.host}/${callHash}`}
           </Typography.Text>
         </Typography.Title>
       </div>
