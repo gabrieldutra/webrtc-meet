@@ -5,9 +5,11 @@ import { VideoCameraOutlined } from "@ant-design/icons";
 import styles from "../styles/Home.module.css";
 import { useState } from "react";
 import { JoinRoomModal } from "../components/JoinRoomModal";
+import { useRouter } from "next/dist/client/router";
 
 const Home: NextPage = () => {
   const [isJoinRoomModalVisible, setIsJoinRoomModalVisible] = useState(false);
+  const router = useRouter();
   return (
     <div className={styles.container}>
       <Head>
@@ -57,8 +59,8 @@ const Home: NextPage = () => {
         centered
         visible={isJoinRoomModalVisible}
         onOk={(roomId) => {
-          console.log("Seleted Room: " + roomId);
           setIsJoinRoomModalVisible(false);
+          router.push(`/${roomId}`);
         }}
         onCancel={() => setIsJoinRoomModalVisible(false)}
       />
