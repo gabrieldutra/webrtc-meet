@@ -5,9 +5,10 @@ export function useLocalMediaStream() {
 
   useEffect(() => {
     let cancel = false;
+    let localMedia: MediaStream;
 
     const loadLocalMedia = async () => {
-      const localMedia = await navigator.mediaDevices.getUserMedia({
+      localMedia = await navigator.mediaDevices.getUserMedia({
         video: true,
       });
       if (!cancel) setLocalMediaStream(localMedia);
@@ -15,6 +16,9 @@ export function useLocalMediaStream() {
 
     loadLocalMedia();
     return () => {
+      if (localMedia) {
+        localMedia.getTracks().forEach((track) => track.stop());
+      }
       cancel = true;
     };
   }, []);
