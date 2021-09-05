@@ -1,4 +1,4 @@
-import { ModalProps, Modal, Input } from "antd";
+import { ModalProps, Modal, Input, Form } from "antd";
 import { useState } from "react";
 
 export interface JoinRoomModalProps extends Omit<ModalProps, "onOk"> {
@@ -11,14 +11,22 @@ export function JoinRoomModal({ onOk, ...otherProps }: JoinRoomModalProps) {
     <Modal
       title="Join an existing room"
       {...otherProps}
-      onOk={() => onOk?.(roomId)}
+      okButtonProps={{ htmlType: "submit", form: "joinRoomModalForm" }}
       okText="Join"
     >
-      <Input
-        placeholder="Enter the Room Id here"
-        value={roomId}
-        onChange={(e) => setRoomId(e.target.value)}
-      />
+      <Form
+        id="joinRoomModalForm"
+        onFinish={({ roomId }) => onOk?.(roomId)}
+        validateMessages={{ required: "This field is required!" }}
+      >
+        <Form.Item name="roomId" label="Room ID" rules={[{ required: true }]}>
+          <Input
+            placeholder="Enter the Room Id here"
+            value={roomId}
+            onChange={(e) => setRoomId(e.target.value)}
+          />
+        </Form.Item>
+      </Form>
     </Modal>
   );
 }
