@@ -7,10 +7,20 @@ import styles from "../styles/Home.module.css";
 import { useState } from "react";
 import { JoinRoomModal } from "../components/JoinRoomModal";
 import { useRouter } from "next/dist/client/router";
+import short from "short-uuid";
+import { useFirestoreCreateCallMutation } from "../lib/useFirestoreCreateCallMutation";
+import { route } from "next/dist/server/router";
 
 const Home: NextPage = () => {
   const [isJoinRoomModalVisible, setIsJoinRoomModalVisible] = useState(false);
   const router = useRouter();
+
+  const createCallMutation = useFirestoreCreateCallMutation({
+    onSuccess(data) {
+      router.push(`/${data.id}`);
+    },
+  });
+
   return (
     <div className={styles.container}>
       <Head>
@@ -57,7 +67,11 @@ const Home: NextPage = () => {
             <p>Join an existing room with the provided id.</p>
           </a>
 
-          <a href="#" className={styles.card}>
+          <a
+            css={{ cursor: "pointer" }}
+            onClick={() => createCallMutation.mutate({})}
+            className={styles.card}
+          >
             <h2>Create &rarr;</h2>
             <p>Create a new room and invite your friends.</p>
           </a>
