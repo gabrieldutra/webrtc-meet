@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 import type { NextPage } from "next";
 import Head from "next/head";
 import Typist from "react-typist";
@@ -19,6 +20,12 @@ const Home: NextPage = () => {
       </Head>
 
       <main className={styles.main}>
+        <img
+          css={{ marginBottom: 40 }}
+          alt="Videocall illustration"
+          width={400}
+          src="/call.svg"
+        />
         <h1
           css={{
             display: "flex",
