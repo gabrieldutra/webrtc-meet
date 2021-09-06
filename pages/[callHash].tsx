@@ -155,13 +155,13 @@ const Call: NextPage = () => {
         };
 
         await callDoc.update({ answer });
+        setRemoteMediaStream(newRemoteMediaStream);
 
         offerCandidates.onSnapshot((snapshot) => {
           snapshot.docChanges().forEach((change) => {
             if (change.type === "added") {
               let data = change.doc.data();
               pc.addIceCandidate(new RTCIceCandidate(data));
-              setRemoteMediaStream(newRemoteMediaStream);
             }
           });
         });
