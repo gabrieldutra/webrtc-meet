@@ -37,6 +37,7 @@ const Call: NextPage = () => {
   } = useRouter();
 
   const [currentUrl, setCurrentUrl] = useState("");
+  const [isCallCreator, setIsCallCreator] = useState<boolean>();
   const firestore = useFirestore();
   const callId = Array.isArray(callHash) ? callHash[0] : callHash;
 
@@ -47,6 +48,10 @@ const Call: NextPage = () => {
   const localMediaStream = useLocalMediaStream({
     skip: false,
   });
+
+  useEffect(() => {
+    setCurrentUrl(`${window?.location?.protocol}//${location.host}/${callId}`);
+  }, [callId]);
 
   const loadedCallRef = useRef(false);
   useEffect(() => {
@@ -77,7 +82,7 @@ const Call: NextPage = () => {
       console.log(doc.exists);
 
       if (!(await callDoc.get()).data()?.offer) {
-        console.log("does not exist!");
+        setIsCallCreator(true);
 
         // Get candidates for caller, save to db
         pc.onicecandidate = (event) => {
@@ -115,15 +120,11 @@ const Call: NextPage = () => {
           });
         });
 
-        setCurrentUrl(
-          `${window?.location?.protocol}//${location.host}/${callId}`
-        );
-
         return () => {
           pc.onicecandidate = null;
         };
       } else {
-        console.log("exists!");
+        setIsCallCreator(false);
 
         pc.onicecandidate = (event) => {
           event.candidate && answerCandidates.add(event.candidate.toJSON());
@@ -178,33 +179,35 @@ const Call: NextPage = () => {
         <meta name="description" content="A basic meet application." />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      {true && (
+      {isCallCreator !== undefined && (
         <>
-          {currentUrl && (
-            <div css={{ marginBottom: 40 }}>
-              <Typography.Title level={3}>
-                Send this link to your friend for them to join:{" "}
-                <Typography.Text code copyable>
-                  {currentUrl}
-                </Typography.Text>
-              </Typography.Title>
-            </div>
-          )}
+          <div css={{ marginBottom: 40 }}>
+            <Typography.Title level={3}>
+              {isCallCreator ? (
+                <>
+                  Send this link to your friend for them to join:{" "}
+                  <Typography.Text code copyable>
+                    {currentUrl}
+                  </Typography.Text>
+                </>
+              ) : (
+                "You're joining an existing call..."
+              )}
+            </Typography.Title>
+          </div>
           <Row gutter={[16, 16]}>
-            <Col span={12}>
+            <Col>
               <Video
                 width="100%"
-                css={{ border: "2px solid black" }}
                 srcObject={localMediaStream}
                 autoPlay
                 playsInline
               />
             </Col>
             {remoteMediaStream && (
-              <Col span={12}>
+              <Col>
                 <Video
                   width="100%"
-                  css={{ border: "2px solid black" }}
                   srcObject={remoteMediaStream}
                   autoPlay
                   playsInline
