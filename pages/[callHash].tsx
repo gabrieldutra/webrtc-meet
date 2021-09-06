@@ -72,8 +72,6 @@ const Call: NextPage = () => {
         });
       };
 
-      setRemoteMediaStream(newRemoteMediaStream);
-
       const callDoc = firestore.collection("calls").doc(callId);
       const offerCandidates = callDoc.collection("offerCandidates");
       const answerCandidates = callDoc.collection("answerCandidates");
@@ -106,6 +104,7 @@ const Call: NextPage = () => {
           if (!pc.currentRemoteDescription && data?.answer) {
             const answerDescription = new RTCSessionDescription(data.answer);
             pc.setRemoteDescription(answerDescription);
+            setRemoteMediaStream(newRemoteMediaStream);
           }
         });
 
@@ -115,6 +114,7 @@ const Call: NextPage = () => {
             if (change.type === "added") {
               const candidate = new RTCIceCandidate(change.doc.data());
               pc.addIceCandidate(candidate);
+              setRemoteMediaStream(newRemoteMediaStream);
             }
           });
         });
@@ -136,6 +136,7 @@ const Call: NextPage = () => {
         await pc.setRemoteDescription(
           new RTCSessionDescription(offerDescription)
         );
+        setRemoteMediaStream(newRemoteMediaStream);
 
         const answerDescription = await pc.createAnswer();
         await pc.setLocalDescription(answerDescription);
@@ -152,6 +153,7 @@ const Call: NextPage = () => {
             if (change.type === "added") {
               let data = change.doc.data();
               pc.addIceCandidate(new RTCIceCandidate(data));
+              setRemoteMediaStream(newRemoteMediaStream);
             }
           });
         });
@@ -160,6 +162,8 @@ const Call: NextPage = () => {
 
     load();
   }, [firestore, callId, localMediaStream]);
+
+  console.log(remoteMediaStream);
 
   return (
     <div
