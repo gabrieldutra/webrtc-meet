@@ -1,12 +1,10 @@
 import type { NextPage } from "next";
 import Head from "next/head";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Video } from "../components/Video";
 import { useRouter } from "next/dist/client/router";
 import { Button, Col, Result, Row, Typography } from "antd";
 import { useLocalMediaStream } from "../lib/useLocalMediaStream";
-import { usePeerConnection } from "../lib/usePeerConnection";
-import { useNewMediaStream } from "../lib/useNewMediaStream";
 import { useFirestore } from "../lib/FirestoreProvider";
 
 const rtcServers = {
@@ -38,11 +36,10 @@ const Call: NextPage = () => {
     query: { callHash },
   } = useRouter();
 
+  const [currentUrl, setCurrentUrl] = useState("");
   const firestore = useFirestore();
   const callId = Array.isArray(callHash) ? callHash[0] : callHash;
 
-  // const pc = useMemo(() => new RTCpc(rtcServers), []);
-  // const remoteMediaStream = useNewMediaStream();
   const [remoteMediaStream, setRemoteMediaStream] = useState<MediaStream>();
   const remoteMediaStreamRef = useRef(remoteMediaStream);
   remoteMediaStreamRef.current = remoteMediaStream;
@@ -61,7 +58,7 @@ const Call: NextPage = () => {
       const pc = new RTCPeerConnection(rtcServers);
 
       // Push tracks from local stream to peer connection
-      newRemoteMediaStream.getTracks().forEach((track) => {
+      localMediaStream.getTracks().forEach((track) => {
         pc.addTrack(track, localMediaStream);
       });
 
@@ -104,7 +101,6 @@ const Call: NextPage = () => {
           if (!pc.currentRemoteDescription && data?.answer) {
             const answerDescription = new RTCSessionDescription(data.answer);
             pc.setRemoteDescription(answerDescription);
-            setRemoteMediaStream(newRemoteMediaStream);
           }
         });
 
@@ -118,6 +114,10 @@ const Call: NextPage = () => {
             }
           });
         });
+
+        setCurrentUrl(
+          `${window?.location?.protocol}//${location.host}/${callId}`
+        );
 
         return () => {
           pc.onicecandidate = null;
@@ -136,7 +136,6 @@ const Call: NextPage = () => {
         await pc.setRemoteDescription(
           new RTCSessionDescription(offerDescription)
         );
-        setRemoteMediaStream(newRemoteMediaStream);
 
         const answerDescription = await pc.createAnswer();
         await pc.setLocalDescription(answerDescription);
@@ -163,8 +162,6 @@ const Call: NextPage = () => {
     load();
   }, [firestore, callId, localMediaStream]);
 
-  console.log(remoteMediaStream);
-
   return (
     <div
       css={{
@@ -183,14 +180,16 @@ const Call: NextPage = () => {
       </Head>
       {true && (
         <>
-          <div css={{ marginBottom: 40 }}>
-            <Typography.Title level={3}>
-              Send this link to your friends for them to join:{" "}
-              <Typography.Text code copyable>
-                {/* {`${location?.protocol}//${location.host}/${callHash}`} */}
-              </Typography.Text>
-            </Typography.Title>
-          </div>
+          {currentUrl && (
+            <div css={{ marginBottom: 40 }}>
+              <Typography.Title level={3}>
+                Send this link to your friend for them to join:{" "}
+                <Typography.Text code copyable>
+                  {currentUrl}
+                </Typography.Text>
+              </Typography.Title>
+            </div>
+          )}
           <Row gutter={[16, 16]}>
             <Col span={12}>
               <Video
@@ -201,15 +200,17 @@ const Call: NextPage = () => {
                 playsInline
               />
             </Col>
-            <Col span={12}>
-              <Video
-                width="100%"
-                css={{ border: "2px solid black" }}
-                srcObject={remoteMediaStream}
-                autoPlay
-                playsInline
-              />
-            </Col>
+            {remoteMediaStream && (
+              <Col span={12}>
+                <Video
+                  width="100%"
+                  css={{ border: "2px solid black" }}
+                  srcObject={remoteMediaStream}
+                  autoPlay
+                  playsInline
+                />
+              </Col>
+            )}
           </Row>
         </>
       )}
