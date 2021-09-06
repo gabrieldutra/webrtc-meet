@@ -23,6 +23,7 @@ export function useLocalMediaStream(
     const loadLocalMedia = async () => {
       localMedia = await navigator.mediaDevices.getUserMedia({
         video: true,
+        audio: true,
       });
       if (!cancel) setLocalMediaStream(localMedia);
     };
