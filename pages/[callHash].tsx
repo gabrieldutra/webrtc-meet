@@ -3,7 +3,15 @@ import Head from "next/head";
 import { useEffect, useRef, useState } from "react";
 import { Video } from "../components/Video";
 import { useRouter } from "next/dist/client/router";
-import { Button, Col, Result, Row, Typography } from "antd";
+import {
+  Badge,
+  Button,
+  Col,
+  Descriptions,
+  Result,
+  Row,
+  Typography,
+} from "antd";
 import { useLocalMediaStream } from "../lib/useLocalMediaStream";
 import { useFirestore } from "../lib/FirestoreProvider";
 
@@ -184,12 +192,16 @@ const Call: NextPage = () => {
           <div css={{ marginBottom: 40 }}>
             <Typography.Title level={3}>
               {isCallCreator ? (
-                <>
-                  Send this link to your friend for them to join:{" "}
-                  <Typography.Text code copyable>
-                    {currentUrl}
-                  </Typography.Text>
-                </>
+                <Descriptions title="Meet Info" bordered>
+                  <Descriptions.Item label="Meet ID" span={3}>
+                    <Typography.Text copyable>{callId}</Typography.Text>
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Meet URL" span={3}>
+                    <Typography.Text code copyable>
+                      {currentUrl}
+                    </Typography.Text>
+                  </Descriptions.Item>
+                </Descriptions>
               ) : (
                 "You're joining an existing call..."
               )}
