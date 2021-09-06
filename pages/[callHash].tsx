@@ -214,6 +214,7 @@ const Call: NextPage = () => {
                 srcObject={localMediaStream}
                 autoPlay
                 playsInline
+                muted
               />
             </Col>
             {remoteMediaStream && (
